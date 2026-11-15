@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (authError) {
     return authError;
   }
-
+  
   // Read the optional provider filter from the URL.
   const provider = request.nextUrl.searchParams.get("provider");
 
