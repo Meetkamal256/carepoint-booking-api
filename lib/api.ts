@@ -1,5 +1,6 @@
 import type {
   Booking,
+  BookingsResponse,
   CreateBookingRequest,
   SlotsResponse,
 } from "@/types/booking";
@@ -30,6 +31,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
+// Retrieve appointment slots, optionally filtered by provider.
 export async function getSlots(provider?: string): Promise<SlotsResponse> {
   const params = new URLSearchParams();
 
@@ -46,6 +48,7 @@ export async function getSlots(provider?: string): Promise<SlotsResponse> {
   return handleResponse<SlotsResponse>(response);
 }
 
+// Submit a new appointment booking.
 export async function createBooking(
   booking: CreateBookingRequest,
   idempotencyKey: string,
@@ -58,6 +61,40 @@ export async function createBooking(
     },
     body: JSON.stringify(booking),
   });
+
+  return handleResponse<Booking>(response);
+}
+
+// Retrieve a patient's booking history.
+export async function getBookings(
+  email: string,
+  limit = 10,
+  cursor?: string,
+): Promise<BookingsResponse> {
+  const params = new URLSearchParams({
+    email,
+    limit: String(limit),
+  });
+
+  if (cursor) {
+    params.set("cursor", cursor);
+  }
+
+  const response = await fetch(`/api/bookings?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  return handleResponse<BookingsResponse>(response);
+}
+
+// Cancel a patient's appointment.
+export async function cancelBooking(bookingId: string): Promise<Booking> {
+  const response = await fetch(
+    `/api/bookings/${encodeURIComponent(bookingId)}`,
+    {
+      method: "DELETE",
+    },
+  );
 
   return handleResponse<Booking>(response);
 }

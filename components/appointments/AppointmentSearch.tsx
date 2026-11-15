@@ -4,17 +4,19 @@ import { useState, type FormEvent } from "react";
 import { LoaderCircle, Mail, Search } from "lucide-react";
 
 interface AppointmentSearchProps {
+  initialEmail?: string;
   isLoading: boolean;
   error: string | null;
   onSearch: (email: string) => void;
 }
 
 export default function AppointmentSearch({
+  initialEmail,
   isLoading,
   error,
   onSearch,
 }: AppointmentSearchProps) {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
