@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server";
 import { proxyBackendRequest } from "@/lib/backend-proxy";
 
+export async function GET(request: NextRequest) {
+  return proxyBackendRequest(request, "/bookings", "GET");
+}
+
 export async function POST(request: NextRequest) {
   return proxyBackendRequest(request, "/bookings", "POST");
 }
