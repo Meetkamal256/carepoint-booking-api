@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 
 type BackendMethod = "GET" | "POST" | "DELETE";
 
@@ -15,6 +15,12 @@ export async function proxyBackendRequest(
   backendPath: string,
   method: BackendMethod,
 ) {
+  // GET handlers need request-time execution before accessing request properties.
+  // This is required by Next.js when Cache Components are enabled.
+  if (method === "GET") {
+    await connection();
+  }
+
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
@@ -82,11 +88,7 @@ export async function proxyBackendRequest(
           `Backend returned ${response.status}. Retrying attempt ${attempt + 1}.`,
         );
       } catch (error) {
-        if (attempt === maxAttempts) {
-          throw error;
-        }
-
-        if (!canRetry) {
+        if (attempt === maxAttempts || !canRetry) {
           throw error;
         }
 
