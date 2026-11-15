@@ -3,6 +3,7 @@ import { connection, NextRequest, NextResponse } from "next/server";
 type BackendMethod = "GET" | "POST" | "DELETE";
 
 const MAX_ATTEMPTS = 3;
+const REQUEST_TIMEOUT_MS = 5000;
 
 const RETRYABLE_STATUS_CODES = new Set([408, 500, 502, 503, 504]);
 
@@ -15,8 +16,7 @@ export async function proxyBackendRequest(
   backendPath: string,
   method: BackendMethod,
 ) {
-  // GET handlers need request-time execution before accessing request properties.
-  // This is required by Next.js when Cache Components are enabled.
+  // Require request-time execution for GET handlers with Cache Components.
   if (method === "GET") {
     await connection();
   }
@@ -51,44 +51,62 @@ export async function proxyBackendRequest(
       headers.set("Idempotency-Key", idempotencyKey);
     }
 
-    // Read the request body once so it can be safely reused for retries.
+    // Read the request body once so it can be reused safely.
     const body = method === "POST" ? await request.text() : undefined;
 
-    // GET requests are safe to retry.
-    // POST requests are retried only when an idempotency key is provided.
+    // Only retry GET and idempotent POST requests.
     const canRetry =
       method === "GET" || (method === "POST" && Boolean(idempotencyKey));
 
     const maxAttempts = canRetry ? MAX_ATTEMPTS : 1;
 
-    let response: Response | null = null;
-
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        response = await fetch(backendUrl, {
+        const response = await fetch(backendUrl, {
           method,
           headers,
           body,
           cache: "no-store",
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
+
+        // Read the body within the attempt so body-reading failures
+        // can also be retried when the operation is safe.
+        const responseBody = await response.text();
 
         const shouldRetry =
           canRetry &&
           RETRYABLE_STATUS_CODES.has(response.status) &&
           attempt < maxAttempts;
 
-        if (!shouldRetry) {
-          break;
+        if (shouldRetry) {
+          console.warn(
+            `Backend returned ${response.status}. Retrying attempt ${attempt + 1}.`,
+          );
+
+          await wait(300 * 2 ** (attempt - 1));
+          continue;
         }
 
-        // Discard the failed response before trying again.
-        await response.body?.cancel();
+        const responseHeaders = new Headers({
+          "Content-Type":
+            response.headers.get("content-type") ?? "application/json",
+          "Cache-Control": "no-store",
+        });
 
-        console.warn(
-          `Backend returned ${response.status}. Retrying attempt ${attempt + 1}.`,
-        );
+        // Preserve rate-limit information for the frontend.
+        const retryAfter = response.headers.get("Retry-After");
+
+        if (retryAfter) {
+          responseHeaders.set("Retry-After", retryAfter);
+        }
+
+        return new NextResponse(responseBody, {
+          status: response.status,
+          headers: responseHeaders,
+        });
       } catch (error) {
-        if (attempt === maxAttempts || !canRetry) {
+        if (!canRetry || attempt === maxAttempts) {
           throw error;
         }
 
@@ -96,35 +114,12 @@ export async function proxyBackendRequest(
           `Backend request failed. Retrying attempt ${attempt + 1}.`,
           error,
         );
+
+        await wait(300 * 2 ** (attempt - 1));
       }
-
-      // Wait 300ms, then 600ms before subsequent attempts.
-      const delay = 300 * 2 ** (attempt - 1);
-      await wait(delay);
     }
 
-    if (!response) {
-      throw new Error("Backend did not return a response");
-    }
-
-    const responseBody = await response.text();
-
-    const responseHeaders = new Headers({
-      "Content-Type":
-        response.headers.get("content-type") ?? "application/json",
-      "Cache-Control": "no-store",
-    });
-
-    const retryAfter = response.headers.get("Retry-After");
-
-    if (retryAfter) {
-      responseHeaders.set("Retry-After", retryAfter);
-    }
-
-    return new NextResponse(responseBody, {
-      status: response.status,
-      headers: responseHeaders,
-    });
+    throw new Error("Backend request failed after all retry attempts");
   } catch (error) {
     console.error("Backend proxy request failed:", error);
 
