@@ -8,7 +8,7 @@ export async function proxyBackendRequest(
   method: BackendMethod,
 ) {
   const apiKey = process.env.API_KEY;
-
+  
   if (!apiKey) {
     console.error("API_KEY is not configured");
 
@@ -17,7 +17,7 @@ export async function proxyBackendRequest(
       { status: 500 },
     );
   }
-
+  
   try {
     // Build the backend URL and preserve query parameters.
     const backendUrl = new URL(backendPath, request.url);

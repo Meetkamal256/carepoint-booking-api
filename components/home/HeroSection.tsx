@@ -54,8 +54,8 @@ export default function HeroSection() {
         <div className="relative mx-auto w-full max-w-lg" aria-hidden="true">
           <div className="absolute -right-10 -top-10 h-56 w-56 rounded-full bg-teal-100/70 blur-3xl" />
 
-          <div className="relative overflow-hidden rounded-[2rem] bg-primary p-5 sm:p-8">
-            <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-[28px] border-white/10" />
+          <div className="relative overflow-hidden rounded-4xl bg-primary p-5 sm:p-8">
+            <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border-28 border-white/10" />
             <div className="absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-secondary/30 blur-2xl" />
 
             <div className="relative rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
