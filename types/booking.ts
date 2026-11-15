@@ -26,3 +26,8 @@ export interface Booking {
   status: BookingStatus;
   created_at: string;
 }
+
+export interface BookingsResponse {
+  bookings: Booking[];
+  next_cursor: string | null;
+}
