@@ -1,4 +1,5 @@
 # CarePoint — Clinic Appointment Booking System
+<img width="1905" height="2556" alt="carepoint-booking-api vercel app_" src="https://github.com/user-attachments/assets/92ec6eb8-935b-43b4-8e59-ba70ac4d4119" />
 
 CarePoint is a full-stack clinic appointment booking application that allows patients to browse available appointment slots, book appointments, retrieve their booking history and cancel existing appointments.
 
