@@ -102,6 +102,23 @@ export default function BookingFlow() {
     idempotencyKeyRef.current = null;
   }
 
+  // Reset the booking interface so the patient can make another appointment.
+  function handleBookAnotherAppointment() {
+    if (isSubmitting) return;
+
+    setBooking(null);
+    setSelectedSlot(null);
+    setSelectedProvider("");
+    setBookingError(null);
+
+    // A new booking must use a fresh idempotency key.
+    idempotencyKeyRef.current = null;
+
+    // Refresh availability so the previously booked slot is no longer shown
+    // as available.
+    void loadSlots();
+  }
+
   async function handleSubmitBooking(bookingDetails: CreateBookingRequest) {
     if (!selectedSlot || isSubmitting) return;
 
@@ -155,7 +172,13 @@ export default function BookingFlow() {
 
   // Show the confirmation after a successful booking.
   if (booking && selectedSlot) {
-    return <BookingConfirmation booking={booking} slot={selectedSlot} />;
+    return (
+      <BookingConfirmation
+        booking={booking}
+        slot={selectedSlot}
+        onBookAnother={handleBookAnotherAppointment}
+      />
+    );
   }
 
   // Show the patient form after an appointment has been selected.

@@ -15,6 +15,7 @@ import type { AppointmentSlot, Booking } from "@/types/booking";
 interface BookingConfirmationProps {
   booking: Booking;
   slot: AppointmentSlot;
+  onBookAnother: () => void;
 }
 
 function formatDate(date: string): string {
@@ -36,6 +37,7 @@ function formatTime(date: string): string {
 export default function BookingConfirmation({
   booking,
   slot,
+  onBookAnother,
 }: BookingConfirmationProps) {
   return (
     <section className="mx-auto w-full max-w-2xl">
@@ -146,12 +148,13 @@ export default function BookingConfirmation({
             <ArrowRight size={17} />
           </Link>
 
-          <Link
-            href="/book"
+          <button
+            type="button"
+            onClick={onBookAnother}
             className="inline-flex flex-1 items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-semibold text-primary transition hover:bg-slate-50"
           >
             Book another appointment
-          </Link>
+          </button>
         </div>
       </div>
     </section>
